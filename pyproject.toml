@@ -1,0 +1,15 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "api"
+version = "0.1.0"
+description = "Wrapper to the API of ERCx, which helps investors identify and avoid scams. It also helps developers write tokens confidently by evaluating technical quality."
+authors = [
+    "Runtime Verification, Inc. <contact@runtimeverification.com>",
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+requests = "^2.25"
