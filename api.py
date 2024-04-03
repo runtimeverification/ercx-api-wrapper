@@ -6,18 +6,41 @@ from client import RestClient
 
 
 class Network(Enum):
-    GOERLI = 5
-    SEPOLIA = 11155111
+    # Ethereum
     MAINNET = 1
+    HOLESKI = 5  # Updated from Goerli to Holeski
+    SEPOLIA = 11155111
+    # Optimism
+    OPTIMISM_MAINNET = 10
+    OPTIMISM_HOLESKI = 420  # Assuming Optimism also uses Holeski for testnet
+    # Arbitrum
+    ARBITRUM_MAINNET = 42161
+    ARBITRUM_HOLESKI = 421613  # Assuming Arbitrum also uses Holeski for testnet
+    # Polygon
+    POLYGON_MAINNET = 137
+    POLYGON_MUMBAI = 80001
+    # Binance Smart Chain (BSC)
+    BSC_MAINNET = 56
+    BSC_TESTNET = 97
+    # Avalanche
+    AVALANCHE_MAINNET = 43114
+    AVALANCHE_FUJI = 43113
+    # Base
+    BASE_MAINNET = 8453
+    BASE_SEPOLIA = 84532
+    # LINEA Blockchain
+    LINEA_MAINNET = 59144
+    LINEA_GOERLI = 59140
+    # Fantom
+    FANTOM_MAINNET = 250
+    FANTOM_TESTNET = 4002
 
     @staticmethod
     def from_str(network: str) -> 'Network':
-        if network.lower() == 'goerli' or network == '5':
-            return Network.GOERLI
-        if network.lower() == 'sepolia' or network == '11155111':
-            return Network.SEPOLIA
-        if network.lower() == 'mainnet' or network == '1':
-            return Network.MAINNET
+        network = network.lower()
+        for name, member in Network.__members__.items():
+            if network == name.lower() or network == str(member.value):
+                return member
         raise ValueError(f'Unexpected value for describing network: {network}')
 
     def __str__(self) -> str:
@@ -26,11 +49,10 @@ class Network(Enum):
 
 class TestLevel(Enum):
     ABI = 'abi'
-    MINIMAL = 'minimal'
-    RECOMMENDED = 'recommended'
-    DESIRABLE = 'desirable'
-    ADDON = 'addon'
-    FINGERPRINT = 'fingerprint'
+    STANDARD = 'standard'
+    SECURITY = 'security'
+    STATUS = 'status'
+    FEATURES = 'features'
     ALL = 'all'
 
     @staticmethod
@@ -137,7 +159,8 @@ class OpenAPI:
             f'An error occurred when retrieving report of token'
             f' on network {network} ({the_network}) at address {address}'
         )
-        return self._get_generic(end_point, message)
+        parameters: dict[str, str] = {'fields': 'text,json,evaluations'}
+        return self._get_generic(endpoint=end_point, message=message, parameters=parameters)
 
     def get_token_evaluations(self, network: str, address: str, level: str, standard: int | None = None) -> Any:
         """
@@ -350,7 +373,7 @@ def example_get_requests(api: OpenAPI) -> None:
     token_report = api.get_token_report(the_network, tether_address)
     print(token_report)
     # Get token evaluations
-    token_evaluations = api.get_token_evaluations(the_network, tether_address, 'minimal')
+    token_evaluations = api.get_token_evaluations(the_network, tether_address, 'standard')
     print(token_evaluations)
     # Get token test result
     token_test_result = api.get_token_test_evaluation(the_network, tether_address, 'testPositiveApprovalEventEmission')
@@ -359,7 +382,7 @@ def example_get_requests(api: OpenAPI) -> None:
     property_tests = api.get_property_tests()
     print(property_tests)
     # Get property tests of level minimal
-    property_tests_minimal = api.get_property_tests('minimal')
+    property_tests_minimal = api.get_property_tests('standard')
     print(property_tests_minimal)
     # Get the token lists of the user
     token_lists = api.get_my_token_lists()
@@ -374,40 +397,43 @@ def example_get_requests(api: OpenAPI) -> None:
     bookmarked_tokens_count = api.get_bookmarked_tokens_count()
     print(bookmarked_tokens_count)
     # Get the information on a token list by its id
-    id = '228856f0-7e27-47cf-aea6-978e814f7f1b'
+    id = '00000000-0000-0000-0000-000000000000'  # Id of a list that always exists, change to your token list id
     token_list_info = api.get_token_list_info(id)
     print(token_list_info)
     # Get the tokens of a token list by its id
-    tokens = api.get_tokens_of_list(id)
+    tokens = api.get_tokens_of_list(id)  # There should be no token in that list
     print(tokens)
     # Get the users of a token list by its id
-    users = api.get_users_of_list(id)
+    users = api.get_users_of_list(id)  # There should no users associated with that list
     print(users)
     # Get the count of tokens of a token list by its id
     count = api.get_tokens_count_of_list(id)
     print(count)
 
 
-def examples_post_requests(api: OpenAPI) -> None:
+def examples_post_requests(api: OpenAPI) -> str:
     # Create a token list
-    name = 'My token list'
-    description = 'My token list description'
-    id = api.create_token_list(name, description)
-    print(id)
+    name = 'My token list from API'
+    description = 'My token list description from API'
+    list_id = api.create_token_list(name, description)
+    print(f'Created token list with id: {list_id}')
     # Add token to list
-    success_add = api.add_token_to_token_list(tether_address, tether_network, my_list)
+    success_add = api.add_token_to_token_list(tether_address, tether_network, list_id)
     print(success_add)
     # Share a token list
-    user = api.share_token_list_with_user(some_other_user, 'WRITE', my_list)
+    user = api.share_token_list_with_user(some_other_user, 'WRITE', list_id)
     print(user)
+    # Return the list id for continuing the demonstration with the other functions
+    return list_id
 
 
-def examples_delete_requests(api: OpenAPI) -> None:
+def examples_delete_requests(api: OpenAPI, list_id: str) -> None:
     # Delete token from list
-    success_delete = api.remove_token_from_token_list(tether_address, tether_network, my_list)
+    # Note the following displays an error message whereas the token is indeed deleted.
+    success_delete = api.remove_token_from_token_list(tether_address, tether_network, list_id)
     print(success_delete)
     # Remove user from list
-    success_remove = api.unshare_token_list_with_user(some_other_user, my_list)
+    success_remove = api.unshare_token_list_with_user(some_other_user, list_id)
     print(success_remove)
 
 
@@ -416,14 +442,14 @@ def launch_requests() -> None:
     # Launch get requests
     example_get_requests(my_api)
     # Launch post requests
-    examples_post_requests(my_api)
+    list_id = examples_post_requests(my_api)
     # Launch delete requests
-    examples_delete_requests(my_api)
+    examples_delete_requests(my_api, list_id)
 
 
 tether_address = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 tether_network = '1'
-my_list = 'my-token-list-1694605502'
+my_list = 'my-token-list'
 the_network = 'Mainnet'
 some_other_user = '101185369'
 
